@@ -63,3 +63,10 @@ If you have:
 -   Orange on the right
 
 The output code will be: **YELLOW - GREEN - BLUE - ORANGE**
+
+### Combinatorics & Capacity
+With **6 available colors** and **4 positions**, assuming **no repeated colors** on a single module, the system supports:
+$$ P(6, 4) = 6 \times 5 \times 4 \times 3 = 360 \text{ unique codes} $$
+
+**Note on Adjacency**:
+In the physical assembly, adjacent modules must share the same color on their joining sides (e.g., the "Right" color of Module A must match the "Left" color of Module B). While this constrains the *global* arrangement, the system can simply identify up to 360 unique module types based on their local color pattern.
