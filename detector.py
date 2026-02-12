@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 
 def get_limits(color):
     # Adjusted values based on initial feedback
@@ -40,6 +41,32 @@ def get_limits(color):
         
     return lowerLimit, upperLimit
 
+def get_card_position(detections):
+    """
+    Sorts 4 detected cards into Top, Left, Bottom, Right positions.
+    detections: list of (x, y, w, h, color_name, center_x, center_y)
+    Returns: list [TopColor, LeftColor, BottomColor, RightColor]
+    """
+    if len(detections) != 4:
+        return None
+
+    # Sort by Y coordinate (Center Y)
+    # The one with min Y is TOP
+    # The one with max Y is BOTTOM
+    sorted_by_y = sorted(detections, key=lambda k: k[6])
+    top_card = sorted_by_y[0]
+    bottom_card = sorted_by_y[-1]
+    
+    # The remaining two are Left and Right
+    remaining = [d for d in detections if d != top_card and d != bottom_card]
+    
+    # Sort remaining by X coordinate (Center X)
+    sorted_by_x = sorted(remaining, key=lambda k: k[5])
+    left_card = sorted_by_x[0]
+    right_card = sorted_by_x[-1]
+
+    return [top_card, left_card, bottom_card, right_card]
+
 def main():
     cap = cv2.VideoCapture(0)
     
@@ -48,7 +75,6 @@ def main():
 
     colors_to_detect = ['red', 'green', 'blue', 'yellow', 'orange', 'pink']
     
-    # Increased min_area to ignore smaller noise
     min_area = 1000 
 
     while True:
@@ -58,6 +84,8 @@ def main():
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         blurred = cv2.GaussianBlur(hsv, (5, 5), 0)
+        
+        detections = [] # Store all detections in this frame
 
         for color_name in colors_to_detect:
             lower, upper = get_limits(color_name)
@@ -69,9 +97,8 @@ def main():
                 mask2 = cv2.inRange(blurred, lower2, upper2)
                 mask = mask + mask2
 
-            # More aggressive morphology
             kernel = np.ones((5, 5), np.uint8)
-            mask = cv2.erode(mask, kernel, iterations=2) # Increased iterations to kill noise
+            mask = cv2.erode(mask, kernel, iterations=2) 
             mask = cv2.dilate(mask, kernel, iterations=2)
 
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -81,16 +108,46 @@ def main():
                 
                 if area > min_area:
                     x, y, w, h = cv2.boundingRect(cnt)
-                    # Filter by aspect ratio to ensure it's somewhat rectangular/card-like
                     aspect_ratio = float(w)/h
-                    # Cards are usually ~1.6 or ~0.6, allow some rotation
+                    
                     if 0.2 < aspect_ratio < 4.0: 
+                        # Calculate center
+                        cx = x + w // 2
+                        cy = y + h // 2
+                        
+                        detections.append((x, y, w, h, color_name, cx, cy))
+                        
+                        # Draw bounding box (visual feedback)
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                         cv2.putText(frame, color_name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
+        # Logic to decode the pattern
+        # We need exactly 4 cards to form a code
+        if len(detections) >= 4:
+            # If more than 4, take the 4 largest? or 4 closest? 
+            # For now, let's take the 4 largest areas (simplest assumption)
+            # Area is w*h
+            detections.sort(key=lambda k: k[2]*k[3], reverse=True)
+            top_4 = detections[:4]
+            
+            ordered = get_card_position(top_4)
+            if ordered:
+                # [Top, Left, Bottom, Right]
+                code_text = f"CODE: {ordered[0][4].upper()} - {ordered[1][4].upper()} - {ordered[2][4].upper()} - {ordered[3][4].upper()}"
+                
+                # Draw the code on screen
+                cv2.putText(frame, code_text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+                
+                # Draw lines connecting them to visualize the diamond
+                pts = np.array([[ordered[0][5], ordered[0][6]], 
+                                [ordered[3][5], ordered[3][6]],
+                                [ordered[2][5], ordered[2][6]],
+                                [ordered[1][5], ordered[1][6]]], np.int32)
+                pts = pts.reshape((-1, 1, 2))
+                cv2.polylines(frame, [pts], True, (255, 255, 0), 2)
+
         cv2.imshow('Detector', frame)
 
-        # Handle 'q' AND the window close button (X)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         if cv2.getWindowProperty('Detector', cv2.WND_PROP_VISIBLE) < 1:
