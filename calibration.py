@@ -61,8 +61,12 @@ def main():
         # Print if there is a change in HSV value
         # (Optional: can just look at sliders)
 
-        cv2.imshow('image', result)
-        cv2.imshow('original', frame)
+        # Resize for display
+        display_result = cv2.resize(result, (960, 540))
+        display_original = cv2.resize(frame, (960, 540))
+
+        cv2.imshow('image', display_result)
+        cv2.imshow('original', display_original)
         
         if cv2.waitKey(10) & 0xFF == ord('q'):
             print(f"Final Values: Lower=[{hMin}, {sMin}, {vMin}], Upper=[{hMax}, {sMax}, {vMax}]")

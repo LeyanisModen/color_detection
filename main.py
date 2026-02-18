@@ -20,8 +20,10 @@ def main():
             print("Error: Can't receive frame (stream end?). Exiting ...")
             break
 
+        # Resize for display
+        display_frame = cv2.resize(frame, (1280, 720))
         # Display the resulting frame
-        cv2.imshow('Camera Feed', frame)
+        cv2.imshow('Camera Feed', display_frame)
 
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) == ord('q'):

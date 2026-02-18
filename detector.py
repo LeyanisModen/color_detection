@@ -146,7 +146,9 @@ def main():
                 pts = pts.reshape((-1, 1, 2))
                 cv2.polylines(frame, [pts], True, (255, 255, 0), 2)
 
-        cv2.imshow('Detector', frame)
+        # Resize for display (so it fits on a non-4K monitor)
+        display_frame = cv2.resize(frame, (1280, 720))
+        cv2.imshow('Detector', display_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
