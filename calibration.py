@@ -6,6 +6,8 @@ def nothing(x):
 
 def main():
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 2160)
     
     # Create a window
     cv2.namedWindow('image')

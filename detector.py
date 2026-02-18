@@ -70,8 +70,8 @@ def get_card_position(detections):
 def main():
     cap = cv2.VideoCapture(0)
     
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 2160)
 
     colors_to_detect = ['red', 'green', 'blue', 'yellow', 'orange', 'pink']
     
