@@ -13,27 +13,27 @@ def get_limits(color):
     # Blue - Narrowed to avoid overlap with purple
     elif color == 'blue':
         lowerLimit = np.array([100, 150, 50], dtype=np.uint8)
-        upperLimit = np.array([130, 255, 255], dtype=np.uint8)
+        upperLimit = np.array([125, 255, 255], dtype=np.uint8)
         
     # Green
     elif color == 'green':
         lowerLimit = np.array([40, 50, 50], dtype=np.uint8)
         upperLimit = np.array([80, 255, 255], dtype=np.uint8)
         
-    # Orange - Drastically increased Saturation/Value to ignore cardboard/wood
+    # Orange - Widened to catch poorly lit orange (was getting caught by red)
     elif color == 'orange':
-        lowerLimit = np.array([10, 180, 150], dtype=np.uint8)
+        lowerLimit = np.array([5, 120, 120], dtype=np.uint8)
         upperLimit = np.array([25, 255, 255], dtype=np.uint8)
         
     # Pink/Purple - Widened range downwards to catch the "blueish" purple card
     elif color == 'pink':
-        lowerLimit = np.array([135, 100, 50], dtype=np.uint8)
+        lowerLimit = np.array([125, 50, 50], dtype=np.uint8)
         upperLimit = np.array([170, 255, 255], dtype=np.uint8)
 
-    # Red
+    # Red - Narrowed lower part to not overlap with orange
     elif color == 'red':
         lowerLimit = np.array([0, 150, 100], dtype=np.uint8)
-        upperLimit = np.array([10, 255, 255], dtype=np.uint8)
+        upperLimit = np.array([4, 255, 255], dtype=np.uint8)
 
     else:
         lowerLimit = np.array([0, 0, 0], dtype=np.uint8)
@@ -75,7 +75,8 @@ def main():
 
     colors_to_detect = ['red', 'green', 'blue', 'yellow', 'orange', 'pink']
     
-    min_area = 1000 
+    # Decreased min_area to detect smaller cards at a distance
+    min_area = 200 
 
     while True:
         ret, frame = cap.read()
@@ -121,30 +122,20 @@ def main():
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                         cv2.putText(frame, color_name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-        # Logic to decode the pattern
-        # We need exactly 4 cards to form a code
-        if len(detections) >= 4:
-            # If more than 4, take the 4 largest? or 4 closest? 
-            # For now, let's take the 4 largest areas (simplest assumption)
-            # Area is w*h
-            detections.sort(key=lambda k: k[2]*k[3], reverse=True)
-            top_4 = detections[:4]
-            
-            ordered = get_card_position(top_4)
-            if ordered:
-                # [Top, Left, Bottom, Right]
-                code_text = f"CODE: {ordered[0][4].upper()} - {ordered[1][4].upper()} - {ordered[2][4].upper()} - {ordered[3][4].upper()}"
-                
-                # Draw the code on screen
-                cv2.putText(frame, code_text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
-                
-                # Draw lines connecting them to visualize the diamond
-                pts = np.array([[ordered[0][5], ordered[0][6]], 
-                                [ordered[3][5], ordered[3][6]],
-                                [ordered[2][5], ordered[2][6]],
-                                [ordered[1][5], ordered[1][6]]], np.int32)
-                pts = pts.reshape((-1, 1, 2))
-                cv2.polylines(frame, [pts], True, (255, 255, 0), 2)
+        # Logic to decode the pattern (Temporarily bypassed)
+        # if len(detections) >= 4:
+        #     detections.sort(key=lambda k: k[2]*k[3], reverse=True)
+        #     top_4 = detections[:4]
+        #     ordered = get_card_position(top_4)
+        #     if ordered:
+        #         code_text = f"CODE: {ordered[0][4].upper()} - {ordered[1][4].upper()} - {ordered[2][4].upper()} - {ordered[3][4].upper()}"
+        #         cv2.putText(frame, code_text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+        #         pts = np.array([[ordered[0][5], ordered[0][6]], 
+        #                         [ordered[3][5], ordered[3][6]],
+        #                         [ordered[2][5], ordered[2][6]],
+        #                         [ordered[1][5], ordered[1][6]]], np.int32)
+        #         pts = pts.reshape((-1, 1, 2))
+        #         cv2.polylines(frame, [pts], True, (255, 255, 0), 2)
 
         # Resize for display (so it fits on a non-4K monitor)
         display_frame = cv2.resize(frame, (1280, 720))
