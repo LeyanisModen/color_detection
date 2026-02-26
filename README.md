@@ -6,7 +6,7 @@ This project implements a computer vision system using **OpenCV** to detect spec
 The system is designed to work in industrial/construction environments (e.g., concrete backgrounds) and detects cards at a distance of ~3 meters.
 
 ## Features
-- **Multi-Color Detection**: Identifies Red, Green, Blue, Yellow, Orange, and Pink cards.
+- **Multi-Color Detection**: Identifies Pink, Green, Blue, Yellow, Orange, and Purple cards.
 - **Robustness**: Filters out background noise (wood/concrete) using HSV thresholding and morphological operations.
 - **Geometric Decoding**: Interprets a 4-card pattern based on their relative positions:
     1.  **Top**
