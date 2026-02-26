@@ -10,8 +10,9 @@ def get_limits(color):
         upperLimit = np.array([35, 255, 255], dtype=np.uint8)
     
     # Blue - Wide range to catch different shades
+    # Raised the 'Value' lower limit from 50 to 100 to avoid detecting very dark blues/blacks
     elif color == 'blue':
-        lowerLimit = np.array([90, 80, 50], dtype=np.uint8)
+        lowerLimit = np.array([90, 80, 100], dtype=np.uint8)
         upperLimit = np.array([125, 255, 255], dtype=np.uint8)
         
     # Green - High saturation to avoid plants
@@ -54,6 +55,10 @@ def main():
     # Minimum area roughly scaled for 8x17cm cards at 3 meters in 4K resolution
     # Decreased to 3000 as requested
     min_area = 3000
+    
+    # Maximum area added to prevent excessively large detections. 
+    # Starts at 500,000 for tuning.
+    max_area = 8000
 
     while True:
         ret, frame = cap.read()
@@ -79,7 +84,7 @@ def main():
             for cnt in contours:
                 area = cv2.contourArea(cnt)
                 
-                if area > min_area:
+                if min_area < area < max_area:
                     # Solidity check: To reject complex blobs (like plants, wood artifacts)
                     hull = cv2.convexHull(cnt)
                     hull_area = cv2.contourArea(hull)
@@ -98,11 +103,21 @@ def main():
                             # The hole might skew it slightly, but it's never a perfect square.
                             # By rejecting aspect ratios near 1.0 (squares), we eliminate most background noise.
                             if (0.3 < aspect_ratio < 0.85) or (1.15 < aspect_ratio < 3.5): 
-                                # Draw thick rectangle around the detected card
-                                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
-                                # Display color name
-                                label = f"{color_name.upper()}"
-                                cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
+                                
+                                # Calculate BBox density: How much of the BBox is actually the detected color
+                                bbox_area = w * h
+                                bbox_density = (area / bbox_area) * 100 if bbox_area > 0 else 0
+                                
+                                if bbox_density >= 70.0:
+                                    # Draw thick rectangle around the detected card
+                                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+                                    
+                                    # Display color name
+                                    label = f"{color_name.upper()} ({int(area)} px)"
+                                    density_label = f"Densidad: {bbox_density:.1f}%"
+                                    
+                                    cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
+                                    cv2.putText(frame, density_label, (x, y + h + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
 
         # Scale down for viewing on screen without losing the original frame resolution for detection
         display_frame = cv2.resize(frame, (1280, 720))
